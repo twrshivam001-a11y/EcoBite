@@ -1,0 +1,347 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student or young professional profile and delivery area in Lucknow",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20,
+          "pattern": "^[0-9+\\-\\s]{10,20}$"
+        },
+        "organization": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "area": {
+          "type": "string",
+          "enum": [
+            "Gomti Nagar",
+            "Aliganj",
+            "Hazratganj",
+            "Jankipuram",
+            "Indira Nagar",
+            "Mahanagar",
+            "Kapoorthala"
+          ]
+        },
+        "addressLine": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 250
+        },
+        "referralCode": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "referredBy": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "onboardingComplete": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "fullName",
+        "email",
+        "phone",
+        "organization",
+        "area",
+        "addressLine",
+        "referralCode",
+        "onboardingComplete",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Home-style meal order placed for Lunch or Dinner delivery in Lucknow",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "userPhone": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "area": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "address": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 250
+        },
+        "slot": {
+          "type": "string",
+          "enum": ["lunch", "dinner"]
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["upi", "cod"]
+        },
+        "items": {
+          "type": "array",
+          "description": "Line items bounded to at most 10 items per order"
+        },
+        "subtotal": {
+          "type": "number"
+        },
+        "discount": {
+          "type": "number"
+        },
+        "totalAmount": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"]
+        },
+        "isTrialOrder": {
+          "type": "boolean"
+        },
+        "hasFeedback": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "userPhone",
+        "area",
+        "address",
+        "slot",
+        "paymentMethod",
+        "items",
+        "subtotal",
+        "discount",
+        "totalAmount",
+        "status",
+        "isTrialOrder",
+        "hasFeedback",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Flexible student meal plan subscription",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "userPhone": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "area": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "planId": {
+          "type": "string",
+          "enum": ["weekly_trial", "half_month", "full_month"]
+        },
+        "planName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 80
+        },
+        "totalMeals": {
+          "type": "number"
+        },
+        "remainingMeals": {
+          "type": "number"
+        },
+        "price": {
+          "type": "number"
+        },
+        "preferredSlot": {
+          "type": "string",
+          "enum": ["lunch", "dinner", "both"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "paused", "completed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "userPhone",
+        "area",
+        "planId",
+        "planName",
+        "totalMeals",
+        "remainingMeals",
+        "price",
+        "preferredSlot",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "Customer pilot feedback & validation ratings",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "orderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "mealName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "tasteRating": {
+          "type": "number"
+        },
+        "hygieneRating": {
+          "type": "number"
+        },
+        "portionRating": {
+          "type": "number"
+        },
+        "priceRating": {
+          "type": "number"
+        },
+        "deliveryRating": {
+          "type": "number"
+        },
+        "wouldOrderAgain": {
+          "type": "boolean"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "orderId",
+        "mealName",
+        "tasteRating",
+        "hygieneRating",
+        "portionRating",
+        "priceRating",
+        "deliveryRating",
+        "wouldOrderAgain",
+        "comment",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private student/professional profile and Lucknow hostel/PG delivery details"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Meal orders placed by authenticated users"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "Active and past meal plan subscriptions"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/Feedback" },
+      "description": "Pilot validation ratings and feedback per meal order"
+    }
+  }
+}

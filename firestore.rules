@@ -1,0 +1,308 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection health check probe
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // --- Reusable Security Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'twrshivam001@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidArea(area) {
+      return area in [
+        'Gomti Nagar',
+        'Aliganj',
+        'Hazratganj',
+        'Jankipuram',
+        'Indira Nagar',
+        'Mahanagar',
+        'Kapoorthala'
+      ];
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'fullName', 'email', 'phone', 'organization',
+          'area', 'addressLine', 'referralCode', 'onboardingComplete',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'fullName', 'email', 'phone', 'organization',
+          'area', 'addressLine', 'referralCode', 'referredBy',
+          'onboardingComplete', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 150 &&
+        data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20 &&
+        data.organization is string && data.organization.size() >= 2 && data.organization.size() <= 120 &&
+        data.area is string && isValidArea(data.area) &&
+        data.addressLine is string && data.addressLine.size() >= 4 && data.addressLine.size() <= 250 &&
+        data.referralCode is string && data.referralCode.size() >= 5 && data.referralCode.size() <= 32 &&
+        data.referralCode.matches('^[A-Z0-9\\-]+$') &&
+        (!('referredBy' in data) || (data.referredBy is string && data.referredBy.size() <= 32)) &&
+        data.onboardingComplete is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+          'userId', 'userName', 'userPhone', 'area', 'address',
+          'slot', 'paymentMethod', 'items', 'subtotal', 'discount',
+          'totalAmount', 'status', 'isTrialOrder', 'hasFeedback',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'userName', 'userPhone', 'area', 'address',
+          'slot', 'paymentMethod', 'items', 'subtotal', 'discount',
+          'totalAmount', 'status', 'isTrialOrder', 'hasFeedback',
+          'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.userId) &&
+        data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 100 &&
+        data.userPhone is string && data.userPhone.size() >= 10 && data.userPhone.size() <= 20 &&
+        data.area is string && isValidArea(data.area) &&
+        data.address is string && data.address.size() >= 4 && data.address.size() <= 250 &&
+        data.slot in ['lunch', 'dinner'] &&
+        data.paymentMethod in ['upi', 'cod'] &&
+        data.items is list && data.items.size() >= 1 && data.items.size() <= 10 &&
+        data.items[0] is map &&
+        data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 10000 &&
+        data.discount is number && data.discount >= 0 && data.discount <= 5000 &&
+        data.totalAmount is number && data.totalAmount >= 0 && data.totalAmount <= 10000 &&
+        data.status in ['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'] &&
+        data.isTrialOrder is bool &&
+        data.hasFeedback is bool &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSubscription(data) {
+      return data.keys().hasAll([
+          'userId', 'userName', 'userPhone', 'area', 'planId',
+          'planName', 'totalMeals', 'remainingMeals', 'price',
+          'preferredSlot', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'userName', 'userPhone', 'area', 'planId',
+          'planName', 'totalMeals', 'remainingMeals', 'price',
+          'preferredSlot', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.userId) &&
+        data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 100 &&
+        data.userPhone is string && data.userPhone.size() >= 10 && data.userPhone.size() <= 20 &&
+        data.area is string && isValidArea(data.area) &&
+        data.planId in ['weekly_trial', 'half_month', 'full_month'] &&
+        data.planName is string && data.planName.size() >= 3 && data.planName.size() <= 80 &&
+        data.totalMeals in [5, 15, 30] &&
+        data.remainingMeals is number && data.remainingMeals >= 0 && data.remainingMeals <= data.totalMeals &&
+        data.price in [475, 1425, 2700] &&
+        data.preferredSlot in ['lunch', 'dinner', 'both'] &&
+        data.status in ['active', 'paused', 'completed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidRating(val) {
+      return val is number && val >= 1 && val <= 5;
+    }
+
+    function isValidFeedback(data) {
+      return data.keys().hasAll([
+          'userId', 'userName', 'orderId', 'mealName',
+          'tasteRating', 'hygieneRating', 'portionRating',
+          'priceRating', 'deliveryRating', 'wouldOrderAgain',
+          'comment', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'userName', 'orderId', 'mealName',
+          'tasteRating', 'hygieneRating', 'portionRating',
+          'priceRating', 'deliveryRating', 'wouldOrderAgain',
+          'comment', 'createdAt'
+        ]) &&
+        isValidId(data.userId) &&
+        data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 100 &&
+        isValidId(data.orderId) &&
+        data.mealName is string && data.mealName.size() >= 2 && data.mealName.size() <= 120 &&
+        isValidRating(data.tasteRating) &&
+        isValidRating(data.hygieneRating) &&
+        isValidRating(data.portionRating) &&
+        isValidRating(data.priceRating) &&
+        isValidRating(data.deliveryRating) &&
+        data.wouldOrderAgain is bool &&
+        data.comment is string && data.comment.size() <= 1000 &&
+        data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        (isOwner(userId) || isAdmin()) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'fullName', 'phone', 'organization', 'area', 'addressLine', 'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'confirmed' &&
+        incoming().hasFeedback == false &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+          // Action 1: Owner cancels a newly confirmed order
+          (
+            isOwner(existing().userId) &&
+            existing().status == 'confirmed' &&
+            incoming().status == 'cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          ) ||
+          // Action 2: Owner marks order as having received feedback
+          (
+            isOwner(existing().userId) &&
+            existing().hasFeedback == false &&
+            incoming().hasFeedback == true &&
+            existing().status != 'cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['hasFeedback', 'updatedAt'])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow get: if isValidId(subscriptionId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(subscriptionId) &&
+        isValidSubscription(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().remainingMeals == incoming().totalMeals &&
+        incoming().status == 'active' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(subscriptionId) &&
+        isValidSubscription(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().totalMeals == existing().totalMeals &&
+        incoming().price == existing().price &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'remainingMeals', 'updatedAt'])) ||
+          // Action 1: Owner pauses or resumes active subscription
+          (
+            isOwner(existing().userId) &&
+            existing().status in ['active', 'paused'] &&
+            incoming().status in ['active', 'paused'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'preferredSlot', 'updatedAt'])
+          ) ||
+          // Action 2: Owner logs a meal redemption (-1 meal)
+          (
+            isOwner(existing().userId) &&
+            existing().status == 'active' &&
+            existing().remainingMeals > 0 &&
+            incoming().remainingMeals == existing().remainingMeals - 1 &&
+            (
+              (incoming().remainingMeals == 0 && incoming().status == 'completed') ||
+              (incoming().remainingMeals > 0 && incoming().status == 'active')
+            ) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['remainingMeals', 'status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /feedback/{feedbackId} {
+      allow get: if isValidId(feedbackId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(feedbackId) &&
+        isValidFeedback(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        (
+          incoming().orderId == 'general_pilot' ||
+          (
+            exists(/databases/$(database)/documents/orders/$(incoming().orderId)) &&
+            get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.userId == request.auth.uid
+          )
+        );
+
+      allow update, delete: if false;
+    }
+  }
+}
